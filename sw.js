@@ -1,4 +1,4 @@
-const CACHE='goshuin-v12-20261116';
+const CACHE='goshuin-v14-20261116';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon.png','./icon-512.png'];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener('activate',event=>{event.waitUntil(Promise.all([self.clients.claim(),caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('goshuin-')&&key!==CACHE).map(key=>caches.delete(key))))]))});
