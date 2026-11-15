@@ -11,7 +11,7 @@
 .lookup-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .lookup-actions button{min-width:0;min-height:44px;font-size:14px;line-height:1.35;overflow-wrap:anywhere}
 @media(max-width:360px){.actions button,.actions a{font-size:13px;padding-inline:5px}}
-</style></head><body><main class="app"><header class="hero"><button class="settings-gear" type="button" onclick="openModal('settings')" aria-label="設定・データ管理を開く" title="設定・データ管理">⚙</button><div class="eyebrow">神社を訪ね、印を集める · v14</div><h1>御朱印めぐり <span style="font-size:18px">⛩</span></h1><p>次に訪ねたい神社が、きっと見つかる。</p></header><div class="stats"><div class="stat"><strong id="total">10</strong><span>登録神社</span></div><div class="stat"><strong id="done">0</strong><span>参拝済み</span></div><div class="stat"><strong id="left">10</strong><span>これから</span></div></div><div class="toolbar"><button class="pill active" id="allBtn" onclick="setFilter('all')">すべて</button><button class="pill" id="todoBtn" onclick="setFilter('todo')">未訪問</button><button class="pill" id="doneBtn" onclick="setFilter('done')">参拝済み</button><button class="pill" onclick="useGPS()">⌖ 現在地順</button><input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)"></div><div class="goshuin-filter"><label for="sortMode" class="small">並び順</label><select id="sortMode" onchange="setSortMode(this.value)"><option value="default">登録順</option><option value="near">現在地から近い順</option><option value="far">現在地から遠い順</option></select></div><section class="section"><div class="section-title"><h2>神社の一覧</h2><small id="sortLabel">登録順</small></div><div id="list"></div></section><div class="notice">※ 御朱印の種類は公開済みの資料に基づく参考情報で、当日の対応を保証しません。若宮八幡宮は京急電鉄2025年掲載情報を反映しています。現在地順は位置情報の許可が必要で、距離は直線距離です。御朱印の種類は案内文から判定できますが、公式サイトの自動巡回は行いません。判定は最新の授与状況を保証しません。受付時間も変更されることがあります。参拝前に公式情報をご確認ください。写真はWikipediaから取得できた場合のみ表示します。</div><nav class="bottom"><button class="secondary" onclick="openModal('lookup')">⌕ 神社を探して追加</button><button onclick="openModal('search')">⌖ 半径から探す</button></nav></main>
+</style></head><body><main class="app"><header class="hero"><button class="settings-gear" type="button" onclick="openModal('settings')" aria-label="設定・データ管理を開く" title="設定・データ管理">⚙</button><div class="eyebrow">神社を訪ね、印を集める · v15</div><h1>御朱印めぐり <span style="font-size:18px">⛩</span></h1><p>次に訪ねたい神社が、きっと見つかる。</p></header><div class="stats"><div class="stat"><strong id="total">10</strong><span>登録神社</span></div><div class="stat"><strong id="done">0</strong><span>参拝済み</span></div><div class="stat"><strong id="left">10</strong><span>これから</span></div></div><div class="toolbar"><button class="pill active" id="allBtn" onclick="setFilter('all')">すべて</button><button class="pill" id="todoBtn" onclick="setFilter('todo')">未訪問</button><button class="pill" id="doneBtn" onclick="setFilter('done')">参拝済み</button><button class="pill" onclick="useGPS()">⌖ 現在地順</button><input id="importFile" type="file" accept="application/json" hidden onchange="importData(event)"></div><div class="goshuin-filter"><label for="sortMode" class="small">並び順</label><select id="sortMode" onchange="setSortMode(this.value)"><option value="default">登録順</option><option value="near">現在地から近い順</option><option value="far">現在地から遠い順</option></select></div><section class="section"><div class="section-title"><h2>神社の一覧</h2><small id="sortLabel">登録順</small></div><div id="list"></div></section><div class="notice">※ 御朱印の種類は公開済みの資料に基づく参考情報で、当日の対応を保証しません。若宮八幡宮は京急電鉄2025年掲載情報を反映しています。現在地順は位置情報の許可が必要で、距離は直線距離です。御朱印の種類は案内文から判定できますが、公式サイトの自動巡回は行いません。判定は最新の授与状況を保証しません。受付時間も変更されることがあります。参拝前に公式情報をご確認ください。写真はWikipediaから取得できた場合のみ表示します。</div><nav class="bottom"><button class="secondary" onclick="openModal('lookup')">⌕ 神社を探して追加</button><button onclick="openModal('search')">⌖ 半径から探す</button></nav></main>
 <div class="modal" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div>
 <script>
 const defaults=[
@@ -124,26 +124,60 @@ function searchVariants(input){let q=String(input||'').trim();const variants=[q]
 function matchedAlias(q){return shrineAliases.find(a=>a.terms.some(t=>q.includes(t)))}
 function isShrineRecord(x){return /shrine|place_of_worship|religious|shinto/i.test([x.type,x.category,x.addresstype,x.extratags?.religion].join(' '))||/神社|神宮|八幡宮|天満宮|稲荷|大社|宮$/.test(x.name||x.namedetails?.name||'')}
 function osmCandidate(x){const a=x.address||{};return {name:(x.namedetails?.['name:ja']||x.name||x.display_name?.split(',')[0]||'').trim(),address:lookupAddress(a),region:[a.state||a.province||'',a.city||a.town||a.village||a.county||''].filter(Boolean).join(' '),lat:Number(x.lat),lon:Number(x.lon),osmId:x.osm_type&&x.osm_id?x.osm_type+'/'+x.osm_id:'',wikidata:x.extratags?.wikidata||'',photoUrl:''}}
-async function nominatimLookup(q,limit=30){const url='https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&extratags=1&namedetails=1&countrycodes=jp&limit='+limit+'&dedupe=0&accept-language=ja&q='+encodeURIComponent(q);const r=await fetch(url,{headers:{Accept:'application/json'}});if(!r.ok)throw Error('地図検索サービスが応答しません');return await r.json()}
+async function nominatimLookup(q,limit=30){const url='https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&extratags=1&namedetails=1&countrycodes=jp&limit='+limit+'&dedupe=0&accept-language=ja&q='+encodeURIComponent(q);const r=await timedFetch(url,{headers:{Accept:'application/json'}},8500);if(!r.ok)throw Error('地図検索サービスが応答しません');return await r.json()}
 async function findPlaceCenter(place){const data=await nominatimLookup(place,3);const x=data.find(x=>Number.isFinite(+x.lat)&&Number.isFinite(+x.lon));return x?{lat:+x.lat,lon:+x.lon}:null}
 async function nearbyShrines(point,radius=3000){const query=`[out:json][timeout:20];(nwr(around:${radius},${point.lat},${point.lon})["religion"="shinto"]["name"];nwr(around:${radius},${point.lat},${point.lon})["amenity"="place_of_worship"]["name"]["name"~"神社|神宮|八幡宮|稲荷|大社|江島"];);out center tags 90;`;
- const r=await fetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query})});if(!r.ok)throw Error('周辺検索サービスが混雑しています');const data=await r.json();return (data.elements||[]).map(x=>({name:x.tags?.['name:ja']||x.tags?.name||'',address:[x.tags?.['addr:province'],x.tags?.['addr:city'],x.tags?.['addr:suburb'],x.tags?.['addr:street'],x.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'住所の詳細は地図で確認',region:[x.tags?.['addr:province'],x.tags?.['addr:city']].filter(Boolean).join(' ')||'地図で地域を確認',lat:Number(x.lat??x.center?.lat),lon:Number(x.lon??x.center?.lon),osmId:x.type+'/'+x.id,wikidata:x.tags?.wikidata||'',photoUrl:''})).filter(x=>x.name&&Number.isFinite(x.lat)&&Number.isFinite(x.lon))}
-async function lookupShrines(){const out=document.getElementById('lookupResults');const name=document.getElementById('lookupQuery').value.trim();const region=document.getElementById('lookupRegion').value.trim();if(!name&&!region){out.textContent='神社名または地域を入力してください';return}out.textContent='名前・別名・周辺地域を検索中…';try{
- const alias=matchedAlias(name);const variants=searchVariants(name);const gathered=[];let lastError=null;
- // Nominatim is a name/place search, not a nationwide fuzzy shrine database.
- for(const v of (name?variants.slice(0,3):[])){try{const data=await nominatimLookup([v,region].filter(Boolean).join(' '),30);gathered.push(...data.filter(x=>Number.isFinite(+x.lat)&&Number.isFinite(+x.lon)&&isShrineRecord(x)).map(osmCandidate));if(gathered.length>=12)break}catch(e){lastError=e;break}}
- // For a place name or an alias with a known place, find shrines geographically.
- const looksLikePlace=!name||/島|市|区|町|村|駅|県|都|府|道|周辺/.test(name)&&!/神社|神宮|大社|八幡宮|稲荷|天満宮/.test(name);
- let center=null;let usedPlace=false;
- if(alias){center=await findPlaceCenter([alias.place,region].filter(Boolean).join(' ')).catch(()=>null)}
- if(!center&&(looksLikePlace||region)){center=await findPlaceCenter([region||name].filter(Boolean).join(' ')).catch(()=>null)}
- if(!center&&name&&!region&&!gathered.length){center=await findPlaceCenter(name).catch(()=>null)}
- if(center){try{const near=await nearbyShrines(center,alias?3000:3500);gathered.push(...near);usedPlace=true}catch(e){lastError=e}}
- // Distinct places can have identical names; dedupe only identical OSM objects or near-identical coordinates + names.
- const seen=new Set();const results=gathered.filter(x=>{const key=x.osmId||normalizeShrineName(x.name)+'@'+x.lat.toFixed(4)+','+x.lon.toFixed(4);if(seen.has(key))return false;seen.add(key);return true}).sort((a,b)=>{const relevance=x=>{const normalized=normalizeShrineName(x.name);const variantsNorm=variants.map(normalizeShrineName);let score=variantsNorm.some(v=>v===normalized)?0:variantsNorm.some(v=>normalized.includes(v)||v.includes(normalized))?1:2;if(alias&&normalized.includes(alias.canonical))score=-1;return score};return relevance(a)-relevance(b)||(center?km(center,a)-km(center,b):0)}).slice(0,40);
- window.lookupResults=results;const info=alias?'<p>表記ゆれを考慮して「江島神社」や江の島周辺も探しました。</p>':usedPlace?'<p>地名を中心に周辺の神社も探しました。</p>':'';
- out.innerHTML=results.length?info+`<p>${results.length}件の候補。住所と地図で確認してから登録してください。写真がない場合もあります。</p>`+results.map(lookupCard).join(''):info+'候補が見つかりませんでした。地域を変えるか手動で追加してください。'+(lastError?'（外部検索サービスが利用できない可能性があります）':'');if(results.length)loadLookupPhotos(results)
- }catch(e){out.textContent='検索できませんでした。通信状況を確認するか、手動で追加してください。 '+e.message}}
+ const r=await timedFetch('https://overpass.kumi.systems/api/interpreter',{method:'POST',body:new URLSearchParams({data:query})},10000);if(!r.ok)throw Error('周辺検索サービスが混雑しています');const data=await r.json();return (data.elements||[]).map(x=>({name:x.tags?.['name:ja']||x.tags?.name||'',address:[x.tags?.['addr:province'],x.tags?.['addr:city'],x.tags?.['addr:suburb'],x.tags?.['addr:street'],x.tags?.['addr:housenumber']].filter(Boolean).join(' ')||'住所の詳細は地図で確認',region:[x.tags?.['addr:province'],x.tags?.['addr:city']].filter(Boolean).join(' ')||'地図で地域を確認',lat:Number(x.lat??x.center?.lat),lon:Number(x.lon??x.center?.lon),osmId:x.type+'/'+x.id,wikidata:x.tags?.wikidata||'',photoUrl:''})).filter(x=>x.name&&Number.isFinite(x.lat)&&Number.isFinite(x.lon))}
+// One primary lookup per search; optional wider search is user-initiated.
+const lookupCache=new Map();let lookupSequence=0;let lookupBusy=false;
+async function timedFetch(url,options={},ms=8500){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),ms);try{return await fetch(url,{...options,signal:controller.signal})}finally{clearTimeout(timer)}}
+function renderLookupResults(results,info=''){
+ window.lookupResults=results;
+ const out=document.getElementById('lookupResults');if(!out)return;
+ out.innerHTML=info+(results.length?`<p>${results.length}件の候補。住所と地図を確認して登録してください。</p>`+results.map(lookupCard).join(''):'<p>候補が見つかりませんでした。</p>')+'<button type="button" class="primary" style="background:#687c68" onclick="lookupMore()">⌕ 周辺の神社も探す（追加検索）</button>';
+ if(results.length)loadLookupPhotos(results);
+}
+function uniqueLookup(items){const seen=new Set();return items.filter(x=>{const key=x.osmId||normalizeShrineName(x.name)+'@'+x.lat.toFixed(4)+','+x.lon.toFixed(4);if(seen.has(key))return false;seen.add(key);return true})}
+async function lookupShrines(){
+ const out=document.getElementById('lookupResults');const name=document.getElementById('lookupQuery').value.trim();const region=document.getElementById('lookupRegion').value.trim();
+ if(!name&&!region){out.textContent='神社名または地域を入力してください';return}
+ const cacheKey=name+'|'+region;if(lookupCache.has(cacheKey)){const cached=lookupCache.get(cacheKey);renderLookupResults(cached.results,cached.info+'<p>前回の検索結果を表示しています。</p>');return}
+ const seq=++lookupSequence;out.textContent='検索中…';
+ const alias=matchedAlias(name);const looksLikePlace=!name||(/島|市|区|町|村|駅|県|都|府|道|周辺/.test(name)&&!/神社|神宮|大社|八幡宮|稲荷|天満宮/.test(name));
+ try{
+  let results=[],info='';
+  if(looksLikePlace){
+   const center=await findPlaceCenter([name,region].filter(Boolean).join(' '));
+   if(!center)throw Error('地域が見つかりません');
+   results=await nearbyShrines(center,3500);info='<p>指定した地域の周辺を検索しました。</p>';
+  }else{
+   // Prioritize a single canonical spelling, rather than several sequential requests.
+   const query=alias?alias.canonical+'神社':name;
+   const data=await nominatimLookup([query,region].filter(Boolean).join(' '),30);
+   results=data.filter(x=>Number.isFinite(+x.lat)&&Number.isFinite(+x.lon)&&isShrineRecord(x)).map(osmCandidate);
+   if(alias)info='<p>表記ゆれを考慮して検索しました。</p>';
+  }
+  if(seq!==lookupSequence)return;
+  results=uniqueLookup(results).slice(0,40);
+  lookupCache.set(cacheKey,{results,info});if(lookupCache.size>25)lookupCache.delete(lookupCache.keys().next().value);
+  renderLookupResults(results,info);
+ }catch(e){if(seq!==lookupSequence)return;out.innerHTML='<p>検索に時間がかかっているか、検索サービスが応答していません。少し時間をおいて再試行してください。</p><button type="button" class="primary" onclick="lookupMore()">⌕ 周辺から探す</button>'}
+}
+async function lookupMore(){
+ const out=document.getElementById('lookupResults');if(lookupBusy)return;
+ const name=document.getElementById('lookupQuery').value.trim(),region=document.getElementById('lookupRegion').value.trim(),alias=matchedAlias(name);
+ const seq=lookupSequence;lookupBusy=true;
+ const note=document.createElement('p');note.textContent='周辺を追加検索中…';out.prepend(note);
+ try{
+  const place=alias?alias.place:(region||name);
+  const center=await findPlaceCenter(place);if(!center)throw Error('中心地点を取得できません');
+  const near=await nearbyShrines(center,alias?3000:3500);
+  if(seq!==lookupSequence)return;
+  const results=uniqueLookup([...(window.lookupResults||[]),...near]).slice(0,40);
+  renderLookupResults(results,'<p>周辺の候補を追加しました。</p>');
+  const cacheKey=name+'|'+region;lookupCache.set(cacheKey,{results,info:'<p>周辺の候補を含みます。</p>'});
+ }catch(e){if(seq===lookupSequence)note.textContent='周辺検索に失敗しました。時間をおいて試してください。'}finally{lookupBusy=false}
+}
 async function loadLookupPhotos(results){const ids=[...new Set(results.map(x=>x.wikidata).filter(x=>/^Q[0-9]+$/.test(x)))].slice(0,30);if(!ids.length)return;try{const url='https://www.wikidata.org/w/api.php?action=wbgetentities&ids='+encodeURIComponent(ids.join('|'))+'&props=claims&format=json&origin=*';const res=await fetch(url);if(!res.ok)return;const data=await res.json();for(let i=0;i<results.length;i++){const x=results[i];const claim=data.entities?.[x.wikidata]?.claims?.P18?.[0]?.mainsnak?.datavalue?.value;if(typeof claim!=='string')continue;const filename=claim.replace(/ /g,'_');const digest=await sha1Hex(filename);if(!digest)continue;const imageUrl='https://upload.wikimedia.org/wikipedia/commons/thumb/'+digest[0]+'/'+digest.slice(0,2)+'/'+encodeURIComponent(filename)+'/640px-'+encodeURIComponent(filename);x.photoUrl=imageUrl;const el=document.getElementById('lookupPhoto'+i);if(el&&window.lookupResults===results)el.innerHTML=`<img loading="lazy" src="${esc(imageUrl)}" alt="${esc(x.name)}に紐付く画像" onerror="this.remove();this.parentElement.querySelector('.lookup-caption').textContent='写真未確認'"><span class="lookup-caption">関連画像</span>`}}catch{}}
 async function sha1Hex(s){if(!crypto.subtle)return '';const data=new TextEncoder().encode(s);const hash=await crypto.subtle.digest('SHA-1',data);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('')}
 function addLookup(i,visited){const item=window.lookupResults?.[i];if(!item)return;const found=existingMatch(item);if(found){alert('この神社はすでに登録されています。参拝状況は一覧から変更できます。');return}const s={id:'lookup'+Date.now()+'_'+i,name:item.name,address:item.address,lat:item.lat,lon:item.lon,osmId:item.osmId,wikidata:item.wikidata,hours:'要確認',status:'御朱印授与も要確認',kind:'unknown',phone:'',visited:!!visited};shrines.push(s);save();render();const el=document.getElementById('lookupResults');if(el&&window.lookupResults)el.innerHTML='<p>追加しました。別の神社も検索できます。</p>'+window.lookupResults.map(lookupCard).join('');alert(s.name+' を'+(visited?'参拝済み':'行きたいリスト')+'に追加しました。')}
